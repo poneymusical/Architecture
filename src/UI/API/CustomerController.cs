@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Application;
-using Application.Commands.CustomerContext;
+using Application.Customers.Commands;
+using Application.Customers.Queries.GetCustomer;
 using Domain.Aggregates;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -28,18 +29,14 @@ namespace UI.API
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(Guid id)
         {
-            var customer = await _applicationDbContext.Set<Customer>().FindAsync(id);
-            return customer != null ? Ok(customer) : NotFound();
+            return Ok(await _mediator.Send(new GetCustomerQuery(id)));
         }
 
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CreateCustomerCommand command)
         {
             var result = await _mediator.Send(command);
-            return result.Match<IActionResult>(
-                Ok, 
-                validationResult => ControllerBaseExtensions.BadRequest(this, validationResult), 
-                Conflict);
+            return CreatedAtAction(nameof(Get), new { id = result.Id}, result);
         }
     }
 }
